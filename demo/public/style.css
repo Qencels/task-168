@@ -505,6 +505,26 @@ h2 {
     display: none;
 }
 
+.loading-indicator {
+    display: none; /* По умолчанию скрыт */
+    margin-left: 10px;
+    font-size: 1em;
+    color: #007bff; /* Цвет индикатора */
+    /* Простая анимация вращения (пример) */
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Пример стилей для заголовка, чтобы разместить индикатор рядом */
+.right-panel h2 {
+    display: flex; /* Используем flexbox для выравнивания элементов в заголовке */
+    align-items: center; /* Выравниваем по центру по вертикали */
+}
+
 
 /* --- Вспомогательные/Неиспользуемые стили --- */
 .reply-btn { display: none; }

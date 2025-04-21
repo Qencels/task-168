@@ -9,6 +9,7 @@ const hangupIcon = document.querySelector('#clientsList .icon-button.hangup-icon
 const clientsListDiv = document.getElementById('clientsList'); // Родитель для делегирования
 const clientIntentElement = document.getElementById('clientIntent');
 const clientEmotionElement = document.getElementById('clientEmotion');
+const loadingIndicator = document.getElementById('loadingIndicator');
 
 const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 const wsUrl = `${wsProtocol}//${window.location.host}/operator`;
@@ -26,6 +27,18 @@ let pendingClientRequestId = null;
 
 
 // --- Новые функции для UI входящего ЗАПРОСА звонка ---
+
+function showLoadingIndicator() {
+    if (loadingIndicator) {
+        loadingIndicator.style.display = 'inline-block'; // Или 'block', в зависимости от элемента и макета
+    }
+}
+
+function hideLoadingIndicator() {
+    if (loadingIndicator) {
+        loadingIndicator.style.display = 'none';
+    }
+}
 
 function showIncomingRequestUI(clientId) {
     console.log('WS Operator: Показ UI входящего запроса звонка.');
@@ -578,6 +591,7 @@ function connectWebSocket() {
                  case 'client_message': // Текстовое сообщение от клиента
                     console.log('WS Operator: Сообщение от клиента:', message.clientId, message.text);
                      addMessageToChat(`Клиент ${message.clientId.substring(0,8)}...`, message.text, 'client-message');
+                     showLoadingIndicator()
                      // TODO: Возможно, передать сообщение для AI анализа
                      if (aiSuggestionArea && typeof message.text === 'string') {
                          // triggerPythonEvent('analyze_message.py', { text: message.text }); // Пример вызова анализа
@@ -659,8 +673,9 @@ function connectWebSocket() {
                         }
                         if (aiSuggestionArea) {
                             aiSuggestionArea.append(results.reference_answer)
-                            aiSuggestionArea.append('\n\n', results.action)
+                            aiSuggestionArea.append('\n\nНе забудьте добавить:\n', results.action)
                         }
+                        hideLoadingIndicator()
 
 
                     } else {

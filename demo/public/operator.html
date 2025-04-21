@@ -8,7 +8,6 @@
 </head>
 <body>
     <h1>Панель Оператора</h1>
-
     <div id="incomingRequestUI" class="call-notification">
         <p>Входящий запрос звонка от клиента: <strong id="incomingRequestClientInfo"></strong></p>
         <button id="acceptRequestButton">Принять запрос</button>
@@ -37,7 +36,7 @@
         </div>
 
         <div class="right-panel">
-            <h2>Предполагаемый ответ (AI)</h2>
+            <h2>Предполагаемый ответ (AI)<span id="loadingIndicator" class="loading-indicator">⚙️</span></h2>
             <div class="client-info-summary">
                 <p><strong>Намерение клиента:</strong> <span id="clientIntent">Ожидание данных...</span></p>
                 <p><strong>Эмоция клиента:</strong> <span id="clientEmotion">Ожидание данных...</span></p>
