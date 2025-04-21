@@ -40,50 +40,10 @@ import logging # Using standard logging
 # Define API Key (replace with your actual key or import mechanism)
 API_KEY = "sk-KNo006G2a48UVE3IxFlQEQ"
 
-def ask_all_agents():
+def ask_all_agents(question):
     """
     Instantiates all agents, defines tasks, and runs them sequentially using CrewAI.
     """
-    # Configure logging to save logs to a file
-    log_file = "app.log"
-    logging.basicConfig(
-        level=logging.CRITICAL,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        encoding='utf-8',
-        stream=sys.stderr,
-        handlers=[
-            logging.FileHandler(log_file, mode='a', encoding='utf-8'),
-            logging.StreamHandler()
-        ]
-    )
-
-    #logging.info("Логирование настроено. Логи будут сохраняться в файл app.log")
-
-    # --- 1. Initialize SemanticSearch --- (Keep as is)
-    try:
-        #print("Инициализация SemanticSearch...")
-        semantic_search_engine = SemanticSearch.with_api_provider(api_key=API_KEY)
-        #print("Загрузка индекса SemanticSearch...")
-        semantic_search_engine.load_index(
-            df_path="../data/faiss_index/corpus.csv",
-            index_path="../data/faiss_index/faiss.index",
-            text_column="name"
-        )
-        #print("SemanticSearch инициализирован и индекс загружен.")
-    except Exception as e:
-        #logging.error(f"Ошибка при инициализации SemanticSearch: {e}")
-        #print(f"Ошибка при инициализации SemanticSearch: {e}")
-        return
-
-    # --- 2. Define the Question --- (Keep as is)
-
-    # Парсим JSON строку
-
-    # Теперь request_data - это Python словарь, содержащий данные от Node.js,
-    # например: {'clientId': '...', 'text': 'Как оплатить тариф?'}
-
-    # Получаем текст запроса из словаря
-    question = input()
     #print(f"Вопрос к агентам: {question}")
 
     # --- 3. Define Agents and Shared Context ---
@@ -226,5 +186,47 @@ def ask_all_agents():
         print(f"Ошибка при выполнении Crew: {e}")
 
 if __name__ == "__main__":
-    # Rename the function call to match the new function name
-    ask_all_agents()
+
+    log_file = "app.log"
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        encoding='utf-8',
+        stream=sys.stderr,
+        handlers=[
+            logging.FileHandler(log_file, mode='a', encoding='utf-8'),
+            logging.StreamHandler()
+        ]
+    )
+
+    try:
+        semantic_search_engine = SemanticSearch.with_api_provider(api_key=API_KEY)
+        logging.info("Загрузка индекса SemanticSearch...")
+        semantic_search_engine.load_index(
+            df_path="../data/faiss_index/corpus.csv",
+            index_path="../data/faiss_index/faiss.index",
+            text_column="name"
+        )
+        logging.info("SemanticSearch инициализирован и индекс загружен.")
+    except Exception as e:
+        logging.error("Ошибка при инициализации SemanticSearch.")
+        pass
+
+    question = input()
+    text = None
+
+    try:
+        outer_data = json.loads(question)
+        print(f"Распаршены внешние данные: {outer_data}")
+
+        # 2. Получить значение по ключу "question"
+        question_json_string = outer_data.get("text")
+        text = question_json_string
+
+    except json.JSONDecodeError as e:
+        print(f"Ошибка парсинга JSON: {e}")
+    except Exception as e:
+        print(f"Произошла ошибка: {e}")
+
+    logging.info(text)
+    ask_all_agents(text)
