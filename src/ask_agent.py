@@ -214,14 +214,14 @@ if __name__ == "__main__":
 
     question = input()
     text = None
+    role = None
 
     try:
         outer_data = json.loads(question)
         print(f"Распаршены внешние данные: {outer_data}")
 
-        # 2. Получить значение по ключу "question"
-        question_json_string = outer_data.get("text")
-        text = question_json_string
+        role = outer_data.get("clientId")
+        text = outer_data.get("text")
 
     except json.JSONDecodeError as e:
         print(f"Ошибка парсинга JSON: {e}")

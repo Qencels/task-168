@@ -588,7 +588,7 @@ function connectWebSocket() {
 
                      break;
 
-                 case 'client_message': // Текстовое сообщение от клиента
+                case 'client_message': // Текстовое сообщение от клиента
                     console.log('WS Operator: Сообщение от клиента:', message.clientId, message.text);
                      addMessageToChat(`Клиент ${message.clientId.substring(0,8)}...`, message.text, 'client-message');
                      showLoadingIndicator()
@@ -656,6 +656,7 @@ function connectWebSocket() {
                     break;
 
                 case 'processing_results':
+                    showLoadingIndicator()
                     console.log('WS Operator: Получены результаты обработки от сервера:', message.data);
                     if (message.data && typeof message.data === 'object') {
                         // Получили объект с результатами обработки от Python
@@ -673,8 +674,9 @@ function connectWebSocket() {
                         }
                         if (aiSuggestionArea) {
                             
-                            aiSuggestionArea.value = results.reference_answer + 
-                                `\n\nНе забудьте добавить:\n${results.action}\n` +
+                            aiSuggestionArea.value = `${results.reference_answer || 'Не определено'}` + 
+                                `\n\nНе забудьте добавить:\n${results.action || 'Не определено'}\n` +
+                                `\nКорректность ответа:\n${results.qa || 'Не определено'}\n` +
                                 `\n####################\n\n` + 
                                 oldAiVal;
 

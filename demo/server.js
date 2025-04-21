@@ -202,7 +202,7 @@ clientWss.on('connection', (ws, request) => {
                      if (typeof message.text === 'string') {
                          const safeText = message.text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
                          triggerPythonEvent('../src/ask_agent.py', { // Вызов скрипта для текстового сообщения
-                             clientId: currentClientId,
+                             clientId: 'client',
                              text: safeText
                          });
                          // Отправляем текстовое сообщение оператору (если он есть)
@@ -380,10 +380,10 @@ operatorWss.on('connection', (ws, request) => {
                       if (currentClientWs && currentClientId && typeof message.text === 'string') {
                           const safeText = message.text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
                           triggerPythonEvent('../src/ask_agent.py', { // Вызов скрипта для текстового сообщения
-                            clientId: currentClientId, // Используем ID текущего клиента
+                            clientId: 'operator', // Используем ID текущего клиента
                             text: safeText
                           });
-                          sendToClient({ type: 'operator_message', text: safeText });
+                          sendToClient({ type: 'client_message', text: safeText });
                       } else {
                          console.warn('[Node] Оператор попытался отправить текстовое сообщение, но клиент не подключен или формат неверен.');
                           // TODO: Отправить ошибку оператору
