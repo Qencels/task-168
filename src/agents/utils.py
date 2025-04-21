@@ -1,16 +1,17 @@
-# -*- coding: utf-8 -*-
 """
 Utility functions for the application
 """
 
 import json
-import requests
-import time
-from bs4 import BeautifulSoup
-import pandas as pd
-import os
 import logging
+import os
+import time
+
+import pandas as pd
+import requests
+from bs4 import BeautifulSoup
 from config import API_KEY
+
 
 def call_mws_gpt(messages, model="mws-gpt-alpha", temperature=0.65, retries=3):
     """
@@ -47,6 +48,7 @@ def call_mws_gpt(messages, model="mws-gpt-alpha", temperature=0.65, retries=3):
                 raise
             time.sleep(1)
 
+
 def get_mws_embeddings(texts, model="bge-m3", retries=3):
     """
     Synchronous function to get embeddings from MWS GPT
@@ -73,12 +75,14 @@ def get_mws_embeddings(texts, model="bge-m3", retries=3):
             response = requests.post(url, json=payload, headers=headers)
             response.raise_for_status()
             data = response.json()
-            return [item['embedding'] for item in data['data']] if isinstance(texts, list) else data['data'][0]['embedding']
+            return [item['embedding'] for item in data['data']] if isinstance(texts, list) else data['data'][0][
+                'embedding']
         except Exception as e:
             if attempt == retries - 1:
                 logging.error(f"Ошибка MWS GPT (эмбеддинги) после {retries} попыток: {str(e)}")
                 raise
             time.sleep(1)
+
 
 def clean_html_content(html_content):
     """
@@ -95,6 +99,7 @@ def clean_html_content(html_content):
         for li in ul.find_all('li'):
             li.insert(0, "- ")
     return soup.get_text(separator="\n", strip=True)
+
 
 def process_b2c_articles(json_files=["articles.json", "articles_b2c.json"], output_csv="knowledge_base_with_b2c.csv"):
     """
@@ -182,6 +187,7 @@ def process_b2c_articles(json_files=["articles.json", "articles_b2c.json"], outp
     logging.info("Примеры запросов в базе знаний:")
     logging.info(b2c_df[['query', 'correct_answer']].head().to_string())
     return b2c_df
+
 
 def load_knowledge_base(file_path="knowledge_base_with_b2c.csv"):
     """

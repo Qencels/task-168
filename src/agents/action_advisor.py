@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Action Advisor Agent implementation."""
 
 from typing import Dict, Any, Tuple
@@ -6,15 +5,15 @@ from typing import Dict, Any, Tuple
 from .base_agent import BaseMwsAgent
 from .utils import call_mws_gpt
 
+
 class ActionAdvisorAgent(BaseMwsAgent):
     """Agent responsible for advising on the next actions."""
 
     def run(self, query: str, shared_context: Dict[str, Any]) -> Tuple[str, float]:
-        # Extract the actual query
         actual_query = query
         if "Последний запрос клиента:" in query:
-             query_start = query.find("Последний запрос клиента: ") + len("Последний запрос клиента: ")
-             query_end = query.find(""", query_start)
+            query_start = query.find("Последний запрос клиента: ") + len("Последний запрос клиента: ")
+            query_end = query.find(""", query_start)
              if query_start != -1 and query_end != -1:
                  actual_query = query[query_start:query_end].strip(""")
 
@@ -22,7 +21,7 @@ class ActionAdvisorAgent(BaseMwsAgent):
             emotion = shared_context.get('emotion', 'нейтральная').lower()
             intent = shared_context.get('intent', '')
             reference_answer = shared_context.get('reference_answer', '')
-            # discount_details = shared_context.get('discount_details', '') # Not directly used in prompt
+
             alternative_service = shared_context.get('alternative_service', '')
             is_confirmed_problem = shared_context.get('discount_offered', False)
             is_service_request = bool(alternative_service)
@@ -38,7 +37,7 @@ class ActionAdvisorAgent(BaseMwsAgent):
             action = call_mws_gpt([
                 {
                     "role": "system",
-                        "content": f"""
+                    "content": f"""
                             Ты {self.role}. {self.backstory}
                             {tone_instruction}
                             Предложи действия для оператора на основе запроса, намерения, эталонного ответа, подтвержденной проблемы и запроса сервиса.
@@ -58,7 +57,7 @@ class ActionAdvisorAgent(BaseMwsAgent):
                             Примеры:
                             - Запрос: 'хочу карпулинг как blablacar' → 'Клиент запросил информацию о карпулинге. Предложены альтернативные сервисы МТС, такие как МТС Такси.'
                         """
-                    },
+                },
                 {
                     "role": "user",
                     "content": f"""
@@ -72,7 +71,7 @@ class ActionAdvisorAgent(BaseMwsAgent):
                     """
                 }
             ])
-            shared_context['action'] = action # Update shared context
+            shared_context['action'] = action
             return action
 
         return self._log_and_measure_time(query, execution)

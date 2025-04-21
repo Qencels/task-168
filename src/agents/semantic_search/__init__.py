@@ -1,4 +1,4 @@
-from .embedding_provider import EmbeddingProvider
 from .api_embedding_provider import APIEmbeddingProvider
+from .embedding_provider import EmbeddingProvider
 from .local_embedding_provider import LocalEmbeddingProvider
 from .search_engine import SemanticSearch

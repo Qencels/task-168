@@ -1,24 +1,27 @@
-import sounddevice as sd
-import faster_whisper
-import config as cfg
-import warmup as wp
-import numpy as np
 import datetime
 import logging
-import torch
 import queue
-import time
 import sys
+import time
+
+import faster_whisper
+import numpy as np
+import sounddevice as sd
+import torch
+
+import config as cfg
+import warmup as wp
 
 audio_queue = queue.Queue()
 
 is_running = True
 whisper_model = None
 silero_vad_model = None
-get_speech_timestamps = None # Указатель на функцию VAD утилиты
-processed_audio_index = 0 # Индекс в буфере, до которого аудио уже было обработано VAD
+get_speech_timestamps = None
+processed_audio_index = 0
 
 _stt_device = None
+
 
 def init_transcribe():
     logging.info("Инициализация моделей...")
@@ -42,41 +45,42 @@ def init_transcribe():
         silero_vad_model, vad_utils = torch.hub.load(
             repo_or_dir=cfg.SILERO_VAD_REPO,
             model=cfg.SILERO_VAD_MODEL,
-            force_reload=False # Не перезагружать при каждом запуске
+            force_reload=False
         )
-        # Извлекаем нужную функцию для получения временных меток сегментов
+
         (get_speech_timestamps, _, _, _, _) = vad_utils
         silero_vad_model = silero_vad_model.to(device_type)
         logging.debug(f"Модель Silero VAD '{cfg.SILERO_VAD_MODEL}' загружена на {device_type}.")
 
         logging.debug(f"Загрузка модели Whisper '{cfg.MODEL_SIZE}'...")
         whisper_model = faster_whisper.WhisperModel(
-            cfg.MODEL_SIZE, 
-            device=device_type, 
-            compute_type=comp_type, 
-            cpu_threads=cfg.CPU_THREADS, 
+            cfg.MODEL_SIZE,
+            device=device_type,
+            compute_type=comp_type,
+            cpu_threads=cfg.CPU_THREADS,
             num_workers=cfg.NUM_WORKERS)
         logging.debug(f"Модель Whisper '{cfg.MODEL_SIZE}' загружена на {device_type} ({comp_type}).")
-        logging.info("Инициализация завершена.") 
+        logging.info("Инициализация завершена.")
 
-        if cfg.WARMUP_ENABLE:  
+        if cfg.WARMUP_ENABLE:
             wp.warmup_models(whisper_model, silero_vad_model, get_speech_timestamps)
 
     except Exception as e:
         logging.error(f"Ошибка на этапе загрузки или прогрева моделей: {e}.")
         return False
-     
+
     return True
+
 
 def audio_callback(indata, frames, time, status):
     if status:
         logging.warning(status, file=sys.stderr)
     audio_queue.put(indata.copy())
 
-def transcribe_audio(publisher):
 
+def transcribe_audio(publisher):
     global is_running, processed_audio_index, _stt_device
-    accumulated_audio = np.array([], dtype=np.float32) # Буфер для накопления аудио
+    accumulated_audio = np.array([], dtype=np.float32)
 
     logging.info(f"\nНачинаю слушать микрофон (частота: {cfg.SAMPLE_RATE} Гц)...")
 
@@ -84,13 +88,13 @@ def transcribe_audio(publisher):
         stream = sd.InputStream(
             samplerate=cfg.SAMPLE_RATE,
             blocksize=cfg.BLOCK_SIZE,
-            channels=cfg.CHANNELS, 
-            dtype='float32',      
-            callback=audio_callback 
+            channels=cfg.CHANNELS,
+            dtype='float32',
+            callback=audio_callback
         )
         stream.start()
     except Exception as e:
-        logging.error(f"Ошибка при открытии аудиопотока: {e}\n"+
+        logging.error(f"Ошибка при открытии аудиопотока: {e}\n" +
                       "Убедитесь, что у вас выбран правильный микрофон по умолчанию и он работает.")
         is_running = False
         return False
@@ -107,20 +111,17 @@ def transcribe_audio(publisher):
             buffer_duration = len(accumulated_audio) / cfg.SAMPLE_RATE
             unprocessed_duration = (len(accumulated_audio) - processed_audio_index) / cfg.SAMPLE_RATE
 
-            # Проверяем буфер VAD, если прошло достаточно времени ИЛИ накопилось много необработанных данных
             if unprocessed_duration >= cfg.VAD_PROCESS_INTERVAL_SEC or \
-                (buffer_duration > 0 and current_time - last_vad_process_time > cfg.VAD_PROCESS_INTERVAL_SEC * 2): # Форсировать VAD, если буфер долго не обрабатывался
+                    (buffer_duration > 0 and current_time - last_vad_process_time > cfg.VAD_PROCESS_INTERVAL_SEC * 2):
 
-                # Выделяем только ту часть буфера, которую еще не обрабатывали VAD
                 current_chunk_for_vad = accumulated_audio[processed_audio_index:]
                 chunk_duration = len(current_chunk_for_vad) / cfg.SAMPLE_RATE
 
-                if chunk_duration > 0: 
+                if chunk_duration > 0:
                     audio_tensor_chunk = torch.from_numpy(current_chunk_for_vad).unsqueeze(0)
                     audio_tensor_chunk = audio_tensor_chunk.to(_stt_device)
 
-                    # Используем Silero VAD для поиска сегментов в текущем чанке
-                    with torch.no_grad(): 
+                    with torch.no_grad():
                         timestamps = get_speech_timestamps(
                             audio_tensor_chunk,
                             silero_vad_model,
@@ -128,9 +129,8 @@ def transcribe_audio(publisher):
                             **cfg.VAD_PARAMETERS
                         )
 
-                    last_vad_process_time = current_time 
+                    last_vad_process_time = current_time
 
-                    # Проходимся по сегментам, найденным VAD в ТЕКУЩЕМ чанке
                     if timestamps:
                         full_text_this_cycle = ""
                         now = datetime.datetime.now()
@@ -153,22 +153,21 @@ def transcribe_audio(publisher):
                                         language=cfg.LANGUAGE,
                                         beam_size=5,
                                         task="transcribe",
-                                        vad_filter=False 
+                                        vad_filter=False
                                     )
 
                                     if segment_segments_whisper is not None:
                                         for s_seg in segment_segments_whisper:
-                                             full_text_this_cycle += s_seg.text + " "
+                                            full_text_this_cycle += s_seg.text + " "
 
                                 except Exception as whisper_e:
                                     logging.warning(f"\nОшибка при транскрипции сегмента Whisper: {whisper_e}")
-
 
                         full_text_this_cycle = full_text_this_cycle.strip()
 
                         max_index_in_chunk_relative_to_its_start = 0
                         if timestamps:
-                            max_index_in_chunk_relative_to_its_start = timestamps[-1]['end'] 
+                            max_index_in_chunk_relative_to_its_start = timestamps[-1]['end']
 
                         samples_processed_in_chunk = max_index_in_chunk_relative_to_its_start
 
@@ -178,11 +177,11 @@ def transcribe_audio(publisher):
                         processed_audio_index = samples_processed_in_chunk
 
                         if full_text_this_cycle:
-                             publisher.publish(timestamp_str + " " + full_text_this_cycle)
+                            publisher.publish(timestamp_str + " " + full_text_this_cycle)
 
                         if processed_audio_index > 0:
-                             accumulated_audio = accumulated_audio[processed_audio_index:]
-                             processed_audio_index = 0
+                            accumulated_audio = accumulated_audio[processed_audio_index:]
+                            processed_audio_index = 0
 
             time.sleep(0.01)
 
