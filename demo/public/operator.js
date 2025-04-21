@@ -15,7 +15,7 @@ const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 const wsUrl = `${wsProtocol}//${window.location.host}/operator`;
 let websocket;
 let currentActiveClients = new Set(); // Set для хранения ID клиента (максимум 1)
-
+let oldAiVal = '';
 
 const incomingRequestUI = document.getElementById('incomingRequestUI'); // Контейнер UI входящего запроса
 const incomingRequestClientInfo = document.getElementById('incomingRequestClientInfo'); // Элемент для отображения ID клиента в запросе
@@ -672,8 +672,13 @@ function connectWebSocket() {
                             clientEmotionElement.textContent = results.emotion || 'Не определено';
                         }
                         if (aiSuggestionArea) {
-                            aiSuggestionArea.append(results.reference_answer)
-                            aiSuggestionArea.append('\n\nНе забудьте добавить:\n', results.action)
+                            
+                            aiSuggestionArea.value = results.reference_answer + 
+                                `\n\nНе забудьте добавить:\n${results.action}\n` +
+                                `\n####################\n\n` + 
+                                oldAiVal;
+
+                            oldAiVal = aiSuggestionArea.value;
                         }
                         hideLoadingIndicator()
 
