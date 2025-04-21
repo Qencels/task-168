@@ -1,10 +1,11 @@
 from typing import List
+
 from .embedding_provider import EmbeddingProvider
 
-# LocalEmbeddingProvider
+
 class LocalEmbeddingProvider(EmbeddingProvider):
     """Embedding provider that uses local models."""
-    
+
     def __init__(self, model_name_or_path: str = "sentence-transformers/all-MiniLM-L6-v2"):
         """
         Initialize local embedding provider.
@@ -21,7 +22,7 @@ class LocalEmbeddingProvider(EmbeddingProvider):
                 "Sentence Transformers not installed. Please install with: "
                 "pip install sentence-transformers"
             )
-    
+
     def get_embedding(self, text: str) -> List[float]:
         """
         Generate embedding for a single text using local model.
@@ -34,11 +35,10 @@ class LocalEmbeddingProvider(EmbeddingProvider):
         """
         if not text:
             raise ValueError("Input text cannot be empty.")
-            
-        # Convert to list to match API output format
+
         embedding = self.model.encode(text).tolist()
         return embedding
-    
+
     def get_batch_embeddings(self, texts: List[str]) -> List[List[float]]:
         """
         Generate embeddings for multiple texts efficiently.
@@ -49,6 +49,6 @@ class LocalEmbeddingProvider(EmbeddingProvider):
         Returns:
             List of embeddings
         """
-        # Batch processing is much more efficient with transformer models
+
         embeddings = self.model.encode(texts)
         return [emb.tolist() for emb in embeddings]

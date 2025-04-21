@@ -1,11 +1,11 @@
-# -*- coding: utf-8 -*-
 """Base class for MWS agents."""
 
-import time
 import logging
+import time
+from abc import ABC, abstractmethod
 from threading import Lock
 from typing import Dict, Any, Tuple
-from abc import ABC, abstractmethod
+
 
 class BaseMwsAgent(ABC):
     """Abstract base class for all MWS agents."""
@@ -22,7 +22,7 @@ class BaseMwsAgent(ABC):
         self.role = role
         self.goal = goal
         self.backstory = backstory
-        self.lock = Lock() # Consider if lock is needed per agent or globally
+        self.lock = Lock()
 
     @abstractmethod
     def run(self, query: str, shared_context: Dict[str, Any]) -> Tuple[str, float]:
@@ -41,15 +41,14 @@ class BaseMwsAgent(ABC):
     def _log_and_measure_time(self, query: str, execution_logic) -> Tuple[str, float]:
         """Helper method to log start/end and measure execution time."""
         start_time = time.time()
-        # Extract the actual query from the potentially longer input string
+
         actual_query = query
         if "Последний запрос клиента:" in query:
-             query_start = query.find("Последний запрос клиента: ") + len("Последний запрос клиента: ")
-             query_end = query.find("\"", query_start) # Corrected end quote finding
-             if query_start != -1 and query_end != -1:
-                 actual_query = query[query_start:query_end].strip("\"")
+            query_start = query.find("Последний запрос клиента: ") + len("Последний запрос клиента: ")
+            query_end = query.find("\"", query_start)
+            if query_start != -1 and query_end != -1:
+                actual_query = query[query_start:query_end].strip("\"")
 
-        # Corrected f-string formatting and ensured proper newlines
         print(f"\n[Агент: {self.role}] Начало обработки запроса '{actual_query}'")
         logging.info(f"[Агент: {self.role}] Начало обработки запроса '{actual_query}'")
 

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Script to ask a single question to an MwsAgent instance.
 """

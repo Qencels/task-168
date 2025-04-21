@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Summary Generator Agent implementation."""
 
 from typing import Dict, Any, Tuple
@@ -6,15 +5,16 @@ from typing import Dict, Any, Tuple
 from .base_agent import BaseMwsAgent
 from .utils import call_mws_gpt
 
+
 class SummaryGeneratorAgent(BaseMwsAgent):
     """Agent responsible for generating a summary of the interaction."""
 
     def run(self, query: str, shared_context: Dict[str, Any]) -> Tuple[str, float]:
-        # Extract the actual query
+
         actual_query = query
         if "Последний запрос клиента:" in query:
-             query_start = query.find("Последний запрос клиента: ") + len("Последний запрос клиента: ")
-             query_end = query.find(""", query_start)
+            query_start = query.find("Последний запрос клиента: ") + len("Последний запрос клиента: ")
+            query_end = query.find(""", query_start)
              if query_start != -1 and query_end != -1:
                  actual_query = query[query_start:query_end].strip(""")
 
@@ -25,10 +25,10 @@ class SummaryGeneratorAgent(BaseMwsAgent):
             action = shared_context.get('action', '')
             discount_details = shared_context.get('discount_details', '')
             alternative_service = shared_context.get('alternative_service', '')
-            is_discount_offered = shared_context.get('discount_offered', False) # Use boolean flag
-            is_alternative_offered = bool(alternative_service) # Use boolean flag
+            is_discount_offered = shared_context.get('discount_offered', False)
+            is_alternative_offered = bool(alternative_service)
 
-            tone_instruction = "" # Tone might not be strictly necessary for summary, but kept for consistency
+            tone_instruction = ""
             if 'раздражение' in emotion or 'недовольство' in emotion:
                 tone_instruction = "Стиль резюме: нейтральный, но отметить недовольство клиента."
             elif 'любопытство' in emotion:
@@ -65,7 +65,7 @@ class SummaryGeneratorAgent(BaseMwsAgent):
                     """
                 }
             ])
-            shared_context['summary'] = summary # Update shared context
+            shared_context['summary'] = summary
             return summary
 
         return self._log_and_measure_time(query, execution)

@@ -1,13 +1,15 @@
-import requests
 import json
 from typing import List
+
+import requests
+
 from .embedding_provider import EmbeddingProvider
 
-# APIEmbeddingProvider
+
 class APIEmbeddingProvider(EmbeddingProvider):
     """Embedding provider that uses remote API."""
-    
-    def __init__(self, api_key: str, api_base_url: str = "https://api.gpt.mws.ru/v1", 
+
+    def __init__(self, api_key: str, api_base_url: str = "https://api.gpt.mws.ru/v1",
                  model: str = "bge-m3"):
         """
         Initialize API embedding provider.
@@ -21,7 +23,7 @@ class APIEmbeddingProvider(EmbeddingProvider):
         self.api_base_url = api_base_url
         self.embedding_endpoint = f"{api_base_url}/embeddings"
         self.model = model
-    
+
     def get_embedding(self, text: str) -> List[float]:
         """
         Generate embedding for a single text using API.
@@ -72,12 +74,12 @@ class APIEmbeddingProvider(EmbeddingProvider):
                     error_message += f"\nResponse text: {e.response.text}"
             print(error_message)
             raise
-        
+
         except (KeyError, IndexError, TypeError, ValueError) as e:
             error_message = f"Failed to parse API response: {e}"
             print(error_message)
             raise ValueError(error_message) from e
-    
+
     def get_batch_embeddings(self, texts: List[str]) -> List[List[float]]:
         """
         Generate embeddings for multiple texts.

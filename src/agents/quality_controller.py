@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Quality Controller Agent implementation."""
 
 from typing import Dict, Any, Tuple
@@ -6,36 +5,34 @@ from typing import Dict, Any, Tuple
 from .base_agent import BaseMwsAgent
 from .utils import call_mws_gpt
 
+
 class QualityControllerAgent(BaseMwsAgent):
     """Agent responsible for controlling the quality of the response."""
 
     def run(self, query: str, shared_context: Dict[str, Any]) -> Tuple[str, float]:
-        # Extract the actual query
+
         actual_query = query
         if "Последний запрос клиента:" in query:
-             query_start = query.find("Последний запрос клиента: ") + len("Последний запрос клиента: ")
-             query_end = query.find(""", query_start)
+            query_start = query.find("Последний запрос клиента: ") + len("Последний запрос клиента: ")
+            query_end = query.find(""", query_start)
              if query_start != -1 and query_end != -1:
                  actual_query = query[query_start:query_end].strip(""")
 
         def execution():
             emotion = shared_context.get('emotion', 'нейтральная').lower()
-            user_answer = shared_context.get('user_answer', '') # User answer provided for comparison
+            user_answer = shared_context.get('user_answer', '')
             reference_answer = shared_context.get('reference_answer', '')
-            summary = shared_context.get('summary', '') # Summary might be useful context for QA
-            # discount_details = shared_context.get('discount_details', '') # Use boolean flags instead
-            # alternative_service = shared_context.get('alternative_service', '') # Use boolean flags instead
+            summary = shared_context.get('summary', '')
+
             is_discount_offered_context = shared_context.get('discount_offered', False)
             is_alternative_offered_context = bool(shared_context.get('alternative_service', ''))
-            is_confirmed_problem_context = shared_context.get('intent', '') == 'жалоба' and emotion == 'недовольство' # Re-check condition for discount necessity
-
+            is_confirmed_problem_context = shared_context.get('intent', '') == 'жалоба' and emotion == 'недовольство'
 
             inappropriate_phrases = ['глупый', 'дурацкий', 'идиот', 'бред', 'не смеши']
             is_inappropriate = any(phrase in user_answer.lower() for phrase in inappropriate_phrases)
 
-            # Basic check if user_answer is empty
             if not user_answer.strip():
-                 return "Не соответствует: Ответ сотрудника пустой."
+                return "Не соответствует: Ответ сотрудника пустой."
 
             qa_result = call_mws_gpt([
                 {
@@ -82,14 +79,13 @@ class QualityControllerAgent(BaseMwsAgent):
                 }
             ])
 
-            # Override if inappropriate phrases were detected by simple check
             if is_inappropriate:
                 qa_result = (
                     "Не соответствует: Ответ содержит неуважительную фразу. Нарушены принципы #Вместе, #ПроКлиента. "
                     "Рекомендация: Пройти тренинг по Кодексу делового поведения и этики МТС."
                 )
 
-            shared_context['qa'] = qa_result # Update shared context
+            shared_context['qa'] = qa_result
             return qa_result
 
         return self._log_and_measure_time(query, execution)
